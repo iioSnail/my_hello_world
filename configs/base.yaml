@@ -1,5 +1,5 @@
 #dataset: 'multiwoz23'
-dataset: 'atis'
+dataset: 'mixsnips'
 split_index: 0
 
 bert_path: 'bert-base-uncased'
