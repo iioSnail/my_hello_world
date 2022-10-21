@@ -1,0 +1,4 @@
+method: 'lof'
+ood_method: 'lof'  # logit or energy or lof
+l3: 0  # \lambda_3 in equation 7 (for Section 5.6)
+seed: 0
