@@ -25,37 +25,37 @@ split = {
     },
     'atis': {
         0: {
-            'valid_ood_label': 'atis_aircraft,atis_flight_time,atis_ground_service,atis_quantity,atis_restriction,atis_cheapest',
-            'test_ood_label': 'atis_airfare,atis_ground_fare,atis_flight,atis_city,atis_capacity,atis_meal'},
+            'valid_ood_label': 'atis_aircraft,atis_flight_time,atis_ground_service,atis_quantity',
+            'test_ood_label': 'atis_airfare,atis_ground_fare,atis_flight,atis_city'},
         1: {
-            'valid_ood_label': 'atis_airline,atis_quantity,atis_cheapest,atis_ground_fare,atis_airport,atis_meal',
-            'test_ood_label': 'atis_airfare,atis_aircraft,atis_flight,atis_ground_service,atis_day_name,atis_abbreviation'},
+            'valid_ood_label': 'atis_airline,atis_quantity,atis_cheapest,atis_ground_fare',
+            'test_ood_label': 'atis_airfare,atis_aircraft,atis_flight,atis_ground_service'},
         2: {
-            'valid_ood_label': 'atis_flight,atis_distance,atis_aircraft,atis_quantity,atis_ground_fare,atis_cheapest',
-            'test_ood_label': 'atis_day_name,atis_restriction,atis_airport,atis_capacity,atis_ground_service,atis_meal'},
+            'valid_ood_label': 'atis_flight,atis_distance,atis_aircraft,atis_quantity',
+            'test_ood_label': 'atis_day_name,atis_restriction,atis_airport,atis_capacity'},
         3: {
-            'valid_ood_label': 'atis_flight_time,atis_cheapest,atis_meal,atis_ground_fare,atis_airport,atis_restriction',
-            'test_ood_label': 'atis_distance,atis_airline,atis_quantity,atis_airfare,atis_capacity,atis_ground_service'},
+            'valid_ood_label': 'atis_flight_time,atis_cheapest,atis_meal,atis_ground_fare',
+            'test_ood_label': 'atis_distance,atis_airline,atis_quantity,atis_airfare'},
         4: {
-            'valid_ood_label': 'atis_day_name,atis_distance,atis_ground_service,atis_abbreviation,atis_ground_fare,atis_cheapest',
-            'test_ood_label': 'atis_flight_no,atis_airfare,atis_airport,atis_flight_time,atis_city,atis_meal'}
+            'valid_ood_label': 'atis_day_name,atis_distance,atis_ground_service,atis_abbreviation',
+            'test_ood_label': 'atis_flight_no,atis_airfare,atis_airport,atis_flight_time'}
     },
     'FSPS': {
         0: {
-            'valid_ood_label': 'get_estimated_departure,get_location,get_contact,get_event_attendee,get_info_road_condition,update_directions,unsupported_event,get_location_school',
-            'test_ood_label': 'get_info_traffic,get_event_attendee_amount,get_event,combine,unintelligible,get_location_home,get_estimated_duration,get_event_organizer'},
+            'valid_ood_label': 'get_estimated_departure,get_location,get_contact,get_event_attendee,get_info_road_condition,update_directions',
+            'test_ood_label': 'get_info_traffic,get_event_attendee_amount,get_event,combine,unintelligible,get_location_home'},
         1: {
-            'valid_ood_label': 'unsupported_navigation,get_estimated_arrival,get_event,unsupported_event,negation,get_location,get_info_route,get_info_road_condition',
-            'test_ood_label': 'get_info_traffic,get_location_school,get_event_attendee_amount,get_distance,get_location_work,get_estimated_duration,get_event_organizer,get_directions'},
+            'valid_ood_label': 'unsupported_navigation,get_estimated_arrival,get_event,unsupported_event,negation,get_location',
+            'test_ood_label': 'get_info_traffic,get_location_school,get_event_attendee_amount,get_distance,get_location_work,get_estimated_duration'},
         2: {
-            'valid_ood_label': 'unsupported,get_estimated_duration,get_estimated_arrival,get_event_attendee_amount,get_contact,unsupported_navigation,negation,unsupported_event',
-            'test_ood_label': 'get_estimated_departure,get_location_school,get_info_traffic,get_location_work,get_info_road_condition,unintelligible,get_event_attendee,combine'},
+            'valid_ood_label': 'unsupported,get_estimated_duration,get_estimated_arrival,get_event_attendee_amount,get_contact,unsupported_navigation',
+            'test_ood_label': 'get_estimated_departure,get_location_school,get_info_traffic,get_location_work,get_info_road_condition,unintelligible'},
         3: {
-            'valid_ood_label': 'get_event_attendee_amount,get_estimated_duration,get_estimated_departure,get_location,get_event_attendee,get_directions,get_info_road_condition,get_contact',
-            'test_ood_label': 'get_location_hometown,unsupported,unsupported_navigation,negation,get_distance,get_event,get_location_school,get_info_traffic'},
+            'valid_ood_label': 'get_event_attendee_amount,get_estimated_duration,get_estimated_departure,get_location,get_event_attendee,get_directions',
+            'test_ood_label': 'get_location_hometown,unsupported,unsupported_navigation,negation,get_distance,get_event'},
         4: {
-            'valid_ood_label': 'unsupported_event,get_estimated_departure,get_event_organizer,get_info_road_condition,update_directions,get_distance,get_estimated_duration,get_contact',
-            'test_ood_label': 'unsupported_navigation,get_location,negation,get_location_hometown,get_event_attendee,get_location_home,get_event,get_directions'}
+            'valid_ood_label': 'unsupported_event,get_estimated_departure,get_event_organizer,get_info_road_condition,update_directions,get_distance',
+            'test_ood_label': 'unsupported_navigation,get_location,negation,get_location_hometown,get_event_attendee,get_location_home'}
     }
 
 }
