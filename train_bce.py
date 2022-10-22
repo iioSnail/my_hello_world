@@ -98,6 +98,7 @@ class TrainBCE(Train):
         else:
             # fitlog.add_best_metric({"test": {"auroc": auroc, "fpr95": fpr95, "aupr_out": aupr_out, "aupr_in": aupr_in}})
             self.save_score(score, auroc)
+            self.save_result(auroc, fpr95, aupr_out, aupr_in)
 
         return auroc
 

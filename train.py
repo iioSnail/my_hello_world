@@ -16,7 +16,7 @@ from transformers import AdamW
 class Train(ABC):
 
     def __init__(self, config):
-        
+
         # get ready
         self.args = load_args(config)
         log_dir = f'log/{self.args.method}_{self.args.ood_method}'
@@ -30,18 +30,20 @@ class Train(ABC):
         valid_ood_set = split[self.args.dataset][self.args.split_index]['valid_ood_label'].split(',')
         test_ood_set = split[self.args.dataset][self.args.split_index]['test_ood_label'].split(',')
         ind_set = [intent for intent in intent_set if intent not in test_ood_set and intent not in valid_ood_set]
+        self.valid_ood_set = valid_ood_set
+        self.test_ood_set = test_ood_set
 
         label_category = {
             'train': ind_set,
             'valid': ind_set + valid_ood_set,
             'test': ind_set + test_ood_set
         }
-        
+
         self.ind_set = ind_set
         self.args.ind_intent_num = len(ind_set)
 
         # fitlog.add_hyper(self.args)
-        
+
         self.train_loader = create_loader(self.args.batch_size, self.args.train, label_category, True)
         self.valid_loader = create_loader(self.args.batch_size, self.args.valid, label_category, False)
         self.test_loader = create_loader(self.args.batch_size, self.args.test, label_category, False)
@@ -52,7 +54,7 @@ class Train(ABC):
             from model.Classifier import Classifier
 
         self.mdl = Classifier(self.args).to(self.args.device)
-    
+
         # for training
         self.step = 0
         self.current_epoch = 0
@@ -93,18 +95,17 @@ class Train(ABC):
                 for key, value in args_dict.items():
                     f.write(f'{key}: {value} \n')
 
-
     def train(self):
         max_auroc = 0
         max_auroc_epoch = -1
         print("Start training")
         while self.current_epoch < self.args.epoch:
-            self.mdl.train()            
+            self.mdl.train()
             self.train_epoch()
-    
+
             self.mdl.eval()
             auroc = self.evaluate(self.valid_loader)
-            
+
             if auroc > max_auroc:
                 max_auroc = auroc
                 max_auroc_epoch = self.current_epoch
@@ -115,16 +116,33 @@ class Train(ABC):
 
         print("End training")
         print(f"Max auroc on valid is {max_auroc}")
-         
+
     def test(self):
         self.mdl.eval()
-        if self.model_parameter is not None: 
+        if self.model_parameter is not None:
             self.mdl.load_state_dict(self.model_parameter)
         metric = self.evaluate(self.test_loader)
         self.save_model(metric)
-    
+
     def save_score(self, score, auroc):
         dir_name = f'score/{self.args.dataset}_{self.args.split_index}'
         if not os.path.isdir(dir_name):
             os.mkdir(dir_name)
         np.save(f'{dir_name}/{self.args.ood_method}_{auroc}.npy', score)
+
+    def save_result(self, auroc, fpr95, aupr_out, aupr_in, intent_num_acc="", output_path='output/result.csv'):
+        result_frame = pd.read_csv(output_path)
+        result_frame.loc[len(result_frame.index)] = [time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
+                                                     self.args.dataset,
+                                                     self.args.method,
+                                                     self.args.ood_method,
+                                                     intent_num_acc,
+                                                     auroc,
+                                                     fpr95,
+                                                     aupr_out,
+                                                     aupr_in,
+                                                     str(self.args),
+                                                     ','.join(self.valid_ood_set),
+                                                     ','.join(self.test_ood_set)
+                                                     ]
+        result_frame.to_csv(output_path, index=False)
