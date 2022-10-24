@@ -43,7 +43,7 @@ class Classifier(nn.Module):
 
         if self.args.method == 'aik_plus':
             attention_output = self.attention_avg(output)
-            self.mlp_intent_num_2(torch.concat([pooled_output, attention_output], dim=1))
+            intent_num = self.mlp_intent_num_2(torch.concat([pooled_output, attention_output], dim=1))
         else:
             intent_num = self.mlp_intent_num(pooled_output)
         """
