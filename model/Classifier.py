@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 
 from model.BERT import BERT
+from model.attn import AttentionAvg
 
 
 class Classifier(nn.Module):
@@ -13,6 +14,8 @@ class Classifier(nn.Module):
         self.softmax = nn.Softmax(dim=1)
         # 输入特征数为bert的hidden_size, 输出特征数为1，即输出一个数字，表示该语料包含的意图数。
         self.mlp_intent_num = nn.Linear(self.args.hidden_size, 1)
+        self.attention_avg = AttentionAvg()
+
         """
         输入特征数为bert的hidden_size
         输出特征数为已知意图数量（in-distribution intent num）
@@ -36,6 +39,10 @@ class Classifier(nn.Module):
 
     def forward(self, sens):
         pooled_output, output, mask = self.encoder(sens)
+
+        if self.args.method == 'aik_plus':
+            pooled_output = self.attention_avg(output)
+
         intent_num = self.mlp_intent_num(pooled_output)
         """
         output: bert输出的h_0, h_1, ..., h_n。 Shape为(batch_size, token_num, hidden_size)，
