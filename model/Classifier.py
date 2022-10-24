@@ -14,6 +14,7 @@ class Classifier(nn.Module):
         self.softmax = nn.Softmax(dim=1)
         # 输入特征数为bert的hidden_size, 输出特征数为1，即输出一个数字，表示该语料包含的意图数。
         self.mlp_intent_num = nn.Linear(self.args.hidden_size, 1)
+        self.mlp_intent_num_2 = nn.Linear(self.args.hidden_size * 2, 1)
         self.attention_avg = AttentionAvg()
 
         """
@@ -41,9 +42,10 @@ class Classifier(nn.Module):
         pooled_output, output, mask = self.encoder(sens)
 
         if self.args.method == 'aik_plus':
-            pooled_output = self.attention_avg(output)
-
-        intent_num = self.mlp_intent_num(pooled_output)
+            attention_output = self.attention_avg(output)
+            self.mlp_intent_num_2(torch.concat([pooled_output, attention_output], dim=1))
+        else:
+            intent_num = self.mlp_intent_num(pooled_output)
         """
         output: bert输出的h_0, h_1, ..., h_n。 Shape为(batch_size, token_num, hidden_size)，
                 例如Shape为(4, 16, 768)表示4个语料，每个预料16个token，每个token的向量表示为768维
