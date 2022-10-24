@@ -16,6 +16,7 @@ class AttentionAvg(nn.Module):
     def forward(self, inputs, mask=None):
         query = self.W_q(inputs)
         key = self.W_k(inputs)
+        value = self.W_v(inputs)
 
         d_k = query.size(-1)
         scores = torch.matmul(query, key.transpose(-2, -1)) / math.sqrt(d_k)
@@ -25,6 +26,6 @@ class AttentionAvg(nn.Module):
             scores = scores.masked_fill(mask == 0, -1e9)
 
         weights = F.softmax(scores, dim=2)
-        # TODO Apply Linear Convert to inputs (W_v)
-        outputs = torch.einsum("btd,btt->bd", inputs, weights)
+
+        outputs = torch.einsum("btd,btt->bd", value, weights)
         return outputs
