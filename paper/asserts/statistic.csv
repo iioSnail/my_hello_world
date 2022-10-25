@@ -1,0 +1,10 @@
+Statistic,MixSNIPS,MultiWOZ 2.3,atis,FSPS
+Train-IND,6998,20319,3392,9804
+Validation-IND,389,2531,177,1429
+Validation-OOD,664,2236,213,982
+Test-IND,398,2530,237,2866
+Test-OOD,671,2418,254,3392
+Test-Mixed OOD,489,64,193,929
+Test-Pure OOD,182,2354,60,2463
+Number of known intents,3,52,10,13
+Average intent number per utterance,1.6,1.5,2.0 ,1.2
