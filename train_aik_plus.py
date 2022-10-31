@@ -10,7 +10,7 @@ import torch.optim as optim
 import numpy as np
 
 
-class TrainAIK(Train):
+class TrainAIKPlus(Train):
 
     def __init__(self, config):
         super().__init__(config=config)
