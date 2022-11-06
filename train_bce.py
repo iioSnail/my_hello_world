@@ -33,7 +33,7 @@ class TrainBCE(Train):
             self.mdl.zero_grad()
             """
             logit: Shape为(batch_size, intent_num)。例如(4,3)表示batch_size为4，有3个已知意图。
-                   然后进行对每个值进行sigmoid，若大于0.5，则认为其是OOD数据。
+                   然后进行对每个值进行sigmoid，若存在某个大于0.5，则认为其是OOD数据。
             """
             logit, pred_intent_num = self.mdl(x)  # for LOF, pred_intent_num is None
 
