@@ -35,14 +35,16 @@ class TrainBCE(Train):
             logit: Shape为(batch_size, intent_num)。例如(4,3)表示batch_size为4，有3个已知意图。
                    然后进行对每个值进行sigmoid，若存在某个大于0.5，则认为其是OOD数据。
             """
-            logit, pred_intent_num = self.mdl(x)  # for LOF, pred_intent_num is None
+            logit, _,  pooled_output= self.mdl(x)  # for LOF, pred_intent_num is None
+
+            cl_loss = 0.
+            # 如果是训练模式，并且对比学习的权重大于0, 则进行对比学习
+            if self.args.l2 > 0:
+                cl_loss = self.mdl.contrastive_learning(x, pooled_output)
 
             bce_loss = self.bce_criterion(logit, y_one_hot)  # BCEWithLogitsLoss包含sigmoid计算
-            if self.args.l3:
-                intent_num_loss = self.intent_num_criterion(pred_intent_num, golden_intent_num)
-                loss = bce_loss * self.args.l1 + intent_num_loss * self.args.l3
-            else:
-                loss = bce_loss * self.args.l1
+
+            loss = bce_loss * self.args.l1 + cl_loss * self.args.l2
 
             loss.backward()
             self.other_optimizer.step()
@@ -104,7 +106,7 @@ class TrainBCE(Train):
 
 
 if __name__ == '__main__':
-    exp = TrainBCE('configs/nn_euler.yaml')
+    exp = TrainBCE('configs/cl.yaml')
     exp.train()
     exp.test()
     # fitlog.finish()

@@ -50,6 +50,8 @@ class Train(ABC):
 
         if self.args.method == 'lof':
             from model.Classifier_for_LOF import Classifier
+        elif self.args.method == 'cl':
+            from model.Classifier_for_CL import Classifier
         else:
             from model.Classifier import Classifier
 
