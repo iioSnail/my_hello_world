@@ -83,4 +83,4 @@ class Classifier(nn.Module):
 
         # 计算对比学习的loss
         return self.sim_loss(F.relu(torch.concat([positive_sim, negative_sim])),
-                             torch.concat([torch.full((4,), 1), torch.full((4,), -1)]).float().to(self.args.device))
+                             torch.concat([torch.full((4,), 1), torch.full((4,), 0)]).float().to(self.args.device))
