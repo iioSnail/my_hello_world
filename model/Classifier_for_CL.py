@@ -53,11 +53,12 @@ class Classifier(nn.Module):
 
         # 获取句子的input_ids
         input_ids, attention_mask = self.encoder.get_inputs(sens)
+        input_ids, attention_mask = input_ids.to(self.args.device), attention_mask.to(self.args.device)
 
         # 构建正样本，对其进行两次dropout
         sample_1, sample_2 = input_ids.clone(), input_ids.clone()
-        sample_1[torch.rand(input_ids.size()) < dropout] = 0
-        sample_2[torch.rand(input_ids.size()) < dropout] = 0
+        sample_1[torch.rand(input_ids.size()).to(self.args.device) < dropout] = 0
+        sample_2[torch.rand(input_ids.size()).to(self.args.device) < dropout] = 0
 
         # 使用bert对dropout后的正样本进行编码
         sample_1, _ = self.encoder.forward2(sample_1, attention_mask)

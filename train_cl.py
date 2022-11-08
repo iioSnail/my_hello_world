@@ -6,7 +6,7 @@ from util.ood_method import get_auc, ith_logit, max_logit, lof, energy, nnd
 import torch.nn as nn
 
 
-class TrainBCE(Train):
+class TrainCL(Train):
 
     def __init__(self, config):
         super().__init__(config=config)
@@ -106,7 +106,7 @@ class TrainBCE(Train):
 
 
 if __name__ == '__main__':
-    exp = TrainBCE('configs/cl.yaml')
+    exp = TrainCL('configs/cl.yaml')
     exp.train()
     exp.test()
     # fitlog.finish()
