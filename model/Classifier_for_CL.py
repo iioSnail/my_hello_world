@@ -51,6 +51,10 @@ class Classifier(nn.Module):
 
         batch_size = len(sens)
 
+        # 如果赶到data_loader尾部，就不进行对比学习了
+        if batch_size <= 1:
+            return 0.
+
         # 获取句子的input_ids
         input_ids, attention_mask = self.encoder.get_inputs(sens)
         input_ids, attention_mask = input_ids.to(self.args.device), attention_mask.to(self.args.device)
@@ -79,4 +83,4 @@ class Classifier(nn.Module):
 
         # 计算对比学习的loss
         return self.sim_loss(F.relu(torch.concat([positive_sim, negative_sim])),
-                             torch.concat([torch.full((4,), 1), torch.full((4,), -1)]).float())
+                             torch.concat([torch.full((4,), 1), torch.full((4,), -1)]).float().to(self.args.device))
