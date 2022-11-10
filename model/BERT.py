@@ -1,4 +1,4 @@
-from transformers import BertModel, BertTokenizer
+from transformers import BertModel, BertTokenizer, BertConfig
 import torch.nn as nn
 
 
@@ -8,7 +8,12 @@ class BERT(nn.Module):
         super(BERT, self).__init__()
         self.args = args
         self.tokenizer = BertTokenizer.from_pretrained(self.args.bert_path)
-        self.encoder = BertModel.from_pretrained(self.args.bert_path, return_dict=True)
+        if self.args.bert_dropout and self.args.bert_dropout > 0:
+            config = BertConfig(hidden_dropout_prob=self.args.bert_dropout,
+                                attention_probs_dropout_prob=self.args.bert_dropout)
+            self.encoder = BertModel.from_pretrained(self.args.bert_path, config=config)
+        else:
+            self.encoder = BertModel.from_pretrained(self.args.bert_path, return_dict=True)
 
     def forward(self, sens):
         encoding = self.tokenizer(sens, return_tensors='pt', padding=True, truncation=True, max_length=512)
