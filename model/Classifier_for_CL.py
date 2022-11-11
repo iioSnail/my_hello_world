@@ -58,9 +58,10 @@ class Classifier(nn.Module):
         # 计算正样本和负样本的cos相似度
         similarities = self.sim(outputs.unsqueeze(1), outputs.unsqueeze(0))
 
-        # todo，对角线相似度全为最高。
         y_true = torch.concat([torch.arange(batch_size, batch_size * 2),
                                torch.arange(0, batch_size)], dim=0).long().to(self.args.device)
+
+        similarities = similarities - torch.eye(outputs.shape[0]) * 1e12
 
         # 计算对比学习的loss
         return self.sim_loss(similarities, y_true)
