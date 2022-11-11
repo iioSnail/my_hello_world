@@ -8,7 +8,7 @@ class BERT(nn.Module):
         super(BERT, self).__init__()
         self.args = args
         self.tokenizer = BertTokenizer.from_pretrained(self.args.bert_path)
-        if self.args.bert_dropout and self.args.bert_dropout > 0:
+        if hasattr(self.args, "bert_dropout") and self.args.bert_dropout > 0:
             config = BertConfig(hidden_dropout_prob=self.args.bert_dropout,
                                 attention_probs_dropout_prob=self.args.bert_dropout)
             self.encoder = BertModel.from_pretrained(self.args.bert_path, config=config)

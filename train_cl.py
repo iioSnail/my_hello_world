@@ -1,3 +1,5 @@
+from tqdm import tqdm
+
 from train import Train
 import torch.optim as optim
 import numpy as np
@@ -24,7 +26,9 @@ class TrainCL(Train):
         all_bce_loss = []
         all_pred = []
         all_y = []
-        for x, y, _ in self.train_loader:
+
+        progress = tqdm(self.train_loader, desc="Training")
+        for x, y, _ in progress:
             y_one_hot = torch.zeros(len(y), self.args.ind_intent_num).to(self.args.device)
             for index, one_ys in enumerate(y):
                 y_one_hot[index, one_ys] = 1
@@ -57,6 +61,12 @@ class TrainCL(Train):
             all_y += y
 
             self.step += 1
+
+            progress.set_postfix({
+                "bce_loss": "%.5f" % bce_loss.item(),
+                "cl_loss": "%.5f" % cl_loss.item(),
+                "loss": "%.5f" % loss.item(),
+            })
 
         bce_loss = np.mean(all_bce_loss)
         acc = sum([all_y[i] == all_pred[i] for i in range(len(all_y))]) / (len(all_y))

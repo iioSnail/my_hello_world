@@ -9,15 +9,24 @@ Contrastive Learning
 """
 
 
+def euclidean_similarity(x, y, temp=0.05):
+    return 1 / (F.pairwise_distance(x, y, p=2) + 1) / temp
+
+
 class Similarity(nn.Module):
     """
     Dot product or cosine similarity
     """
 
-    def __init__(self, temp=0.05):
+    def __init__(self, sim_method='cos', temp=0.05):
         super().__init__()
         self.temp = temp  # temperature
-        self.cos = nn.CosineSimilarity(dim=-1)
+        if sim_method == 'cos':
+            self.cos = nn.CosineSimilarity(dim=-1)
+        elif sim_method == 'euclidean':
+            self.cos = euclidean_similarity
+        else:
+            raise Exception("Please specify the similarity method.")
 
     def forward(self, x, y):
         return self.cos(x, y) / self.temp
@@ -32,7 +41,7 @@ class Classifier(nn.Module):
         self.mlp = nn.Linear(self.args.hidden_size, args.ind_intent_num)
 
         self.projector = nn.Linear(self.args.hidden_size, self.args.hidden_size)
-        self.sim = Similarity()
+        self.sim = Similarity(sim_method=self.args.sim_method)
         self.sim_loss = nn.CrossEntropyLoss()
 
     def forward(self, sens):
@@ -55,13 +64,14 @@ class Classifier(nn.Module):
         # 将所有的样本再经过一次dense层
         outputs = self.projector(cls_hidden_output)
 
-        # 计算正样本和负样本的cos相似度
+        # 计算每个样本与其他所有样本的相似度
         similarities = self.sim(outputs.unsqueeze(1), outputs.unsqueeze(0))
 
+        # 因为第二次过bert直接拼到第一次的后面的，所以y_true为[128, 129, ...., 0, 1, 2, ...]
         y_true = torch.concat([torch.arange(batch_size, batch_size * 2),
                                torch.arange(0, batch_size)], dim=0).long().to(self.args.device)
 
-        similarities = similarities - torch.eye(outputs.shape[0]) * 1e12
+        similarities = similarities - (torch.eye(outputs.shape[0]) * 1e12).to(self.args.device)
 
         # 计算对比学习的loss
         return self.sim_loss(similarities, y_true)
