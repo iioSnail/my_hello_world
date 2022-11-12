@@ -9,8 +9,12 @@ Contrastive Learning
 """
 
 
-def euclidean_similarity(x, y, temp=0.05):
-    return 1 / (F.pairwise_distance(x, y, p=2) + 1) / temp
+def euclidean_metric(a, b,temp=0.05):
+    n = a.shape[0]
+    a = a.expand(n, n, -1)
+    b = b.expand(n, n, -1)
+    logits = ((a - b)**2).sum(dim=2)
+    return 1/(logits+1)/temp
 
 
 class Similarity(nn.Module):
@@ -24,7 +28,7 @@ class Similarity(nn.Module):
         if sim_method == 'cos':
             self.cos = nn.CosineSimilarity(dim=-1)
         elif sim_method == 'euclidean':
-            self.cos = euclidean_similarity
+            self.cos = euclidean_metric
         else:
             raise Exception("Please specify the similarity method.")
 
@@ -41,7 +45,9 @@ class Classifier(nn.Module):
         self.mlp = nn.Linear(self.args.hidden_size, args.ind_intent_num)
 
         self.projector = nn.Linear(self.args.hidden_size, self.args.hidden_size)
+        #self.projector = = nn.Sequential(nn.Linear(self.args.hidden_size,self.args.hidden_size), nn.ReLU(), nn.Linear(self.args.hidden_size,self.args.hidden_size))
         self.sim = Similarity(sim_method=self.args.sim_method)
+        self.sim_method = self.args.sim_method
         self.sim_loss = nn.CrossEntropyLoss()
 
     def forward(self, sens):
@@ -59,7 +65,7 @@ class Classifier(nn.Module):
         _, last_hidden_output, _ = self.encoder(sens)
         cls_hidden_output_2 = last_hidden_output[:, 0, :]
 
-        cls_hidden_output = torch.concat([cls_hidden_output, cls_hidden_output_2], dim=0)
+        cls_hidden_output = torch.cat([cls_hidden_output, cls_hidden_output_2], dim=0)
 
         # 将所有的样本再经过一次dense层
         outputs = self.projector(cls_hidden_output)
@@ -68,10 +74,10 @@ class Classifier(nn.Module):
         similarities = self.sim(outputs.unsqueeze(1), outputs.unsqueeze(0))
 
         # 因为第二次过bert直接拼到第一次的后面的，所以y_true为[128, 129, ...., 0, 1, 2, ...]
-        y_true = torch.concat([torch.arange(batch_size, batch_size * 2),
+        y_true = torch.cat([torch.arange(batch_size, batch_size * 2),
                                torch.arange(0, batch_size)], dim=0).long().to(self.args.device)
 
-        similarities = similarities - (torch.eye(outputs.shape[0]) * 1e12).to(self.args.device)
+        similarities = similarities - (torch.eye(similarities.shape[0]) * 1e12).to(self.args.device)
 
         # 计算对比学习的loss
         return self.sim_loss(similarities, y_true)
