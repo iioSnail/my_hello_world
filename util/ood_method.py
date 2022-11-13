@@ -7,6 +7,7 @@ from itertools import combinations
 import pandas as pd
 from sklearn.neighbors import LocalOutlierFactor, NearestCentroid
 from tqdm import tqdm
+from torch.nn import functional as F
 
 
 def get_auc(y, pred):
@@ -35,16 +36,16 @@ def get_train_test_rep(train_loader, test_loader, mdl):
     train_rep = []
     for x, _, _ in tqdm(train_loader, "Build Training Data Representations"):
         rep = mdl.test(x)
-        train_rep.append(rep)
-    train_rep = torch.cat(train_rep, dim=0).detach().cpu().numpy()
+        train_rep.append(rep.detach())
+    train_rep = torch.cat(train_rep, dim=0)
 
     test_rep = []
     all_is_ood = []
     for x, _, is_ood in tqdm(test_loader, "Build Test Data Representations"):
         rep = mdl.test(x)
-        test_rep.append(rep)
+        test_rep.append(rep.detach())
         all_is_ood += is_ood
-    test_rep = torch.cat(test_rep, dim=0).detach().cpu().numpy()
+    test_rep = torch.cat(test_rep, dim=0)
     return train_rep, test_rep, all_is_ood
 
 
@@ -79,13 +80,12 @@ def nnd(train_loader, test_loader, mdl, ood_method='nn_euler'):
 
     if ood_method == 'nn_euler':
         # 上面那种写法太吃内存了，改为for循环
-        for rep in test_rep:
-            nearest_distances.append(np.linalg.norm(rep - train_rep, axis=1).min())
+        for rep in tqdm(test_rep, desc="nn_euler"):
+            nearest_distances.append(F.pairwise_distance(rep, train_rep.unsqueeze(0)).min().cpu())
 
     if ood_method == 'nn_cosine':
         for rep in test_rep:
-            distances = 1 - np.dot(rep, train_rep.T) / (np.linalg.norm(rep) * np.linalg.norm(train_rep, axis=1))
-            nearest_distances.append(distances.min())
+            nearest_distances.append((1 - F.cosine_similarity(rep, train_rep)).min().cpu())
 
     score = np.array(nearest_distances)
 
