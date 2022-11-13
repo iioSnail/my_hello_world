@@ -77,7 +77,7 @@ class TrainCL(Train):
         if self.args.ood_method == 'lof':
             all_is_ood, score = lof(self.train_loader, loader, self.mdl)
         elif self.args.ood_method == 'nn_euler' or self.args.ood_method == 'nn_cosine':
-            all_is_ood, score = nnd(self.train_loader, loader, self.mdl, self.args.ood_method)
+            all_is_ood, score = nnd(self.train_loader, loader, self.mdl, self.args.ood_method, self.args.k)
         else:  # for energy, logit
             all_intent_num_pred = []
             all_logit = []

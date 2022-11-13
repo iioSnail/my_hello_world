@@ -68,8 +68,9 @@ def lof(train_loader, test_loader, mdl, k=20):
     score, _, _ = lof_value(train_rep, test_rep, k=k)
     return all_is_ood, score
 
-# Nearest Distance
-def nnd(train_loader, test_loader, mdl, ood_method='nn_euler'):
+
+# K Nearest Distance
+def nnd(train_loader, test_loader, mdl, ood_method='nn_euler', k=1):
     # 获取训练集和测试集的向量表示
     train_rep, test_rep, all_is_ood = get_train_test_rep(train_loader, test_loader, mdl)
 
@@ -81,11 +82,13 @@ def nnd(train_loader, test_loader, mdl, ood_method='nn_euler'):
     if ood_method == 'nn_euler':
         # 上面那种写法太吃内存了，改为for循环
         for rep in tqdm(test_rep, desc="nn_euler"):
-            nearest_distances.append(F.pairwise_distance(rep, train_rep.unsqueeze(0)).min().cpu())
+            distances = F.pairwise_distance(rep, train_rep.unsqueeze(0))
+            nearest_distances.append(torch.topk(distances, k, largest=False)[0][-1].cpu())
 
     if ood_method == 'nn_cosine':
         for rep in test_rep:
-            nearest_distances.append((1 - F.cosine_similarity(rep, train_rep)).min().cpu())
+            distances = 1 - F.cosine_similarity(rep, train_rep)
+            nearest_distances.append(torch.topk(distances, k, largest=False)[0][-1].cpu())
 
     score = np.array(nearest_distances)
 

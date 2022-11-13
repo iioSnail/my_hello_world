@@ -5,3 +5,4 @@ seed: 0
 bert_dropout: 0.1
 l2: 0.2
 sim_method: 'euclidean'
+k: 3
