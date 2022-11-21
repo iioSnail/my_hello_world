@@ -152,6 +152,9 @@ def mahalanobis(train_loader, test_loader, mdl, use_intent_num=True):
 
         all_intent_num_pred += intent_num_pred
         all_intent_num_y += [len(y[i]) for i in range(len(y))]
+
+        all_intent_num_pred = all_intent_num_y
+
         all_is_ood += is_ood
 
     intent_num_acc = sum([all_intent_num_y[i] == all_intent_num_pred[i] for i in range(len(all_intent_num_y))]) / len(

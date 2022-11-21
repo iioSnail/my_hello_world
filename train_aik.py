@@ -44,7 +44,7 @@ class TrainAIK(Train):
         bsz = len(golden_center)
         # 让网络输出的意图向量表示尽可能的接近真实意图中心
         return torch.pow(golden_output - golden_center, 2).sum() / (2 * bsz)
-        
+
     def neg_loss(self, output, y):
         """
         :param output: 网络输出的每个语料对于每种意图的向量表示
@@ -68,7 +68,7 @@ class TrainAIK(Train):
 
     def train_epoch(self):
         self.current_epoch += 1
-        
+
         all_pos_loss = []
         all_neg_loss = []
         all_intent_num_y = []
@@ -78,11 +78,12 @@ class TrainAIK(Train):
             self.mdl.zero_grad()
             output, pred_intent_num = self.mdl(x)
             golden_intent_num = torch.Tensor([[len(y[i])] for i in range(len(y))]).to(self.args.device)
-            
+            pred_intent_num = golden_intent_num # 直接使用真值
+
             pos_loss = self.pos_loss(output, y)
             neg_loss = self.neg_loss(output, y)
-            intent_num_loss = self.intent_num_criterion(pred_intent_num, golden_intent_num)
-            loss = pos_loss * self.args.l1 + neg_loss * self.args.l2 + intent_num_loss * self.args.l3
+            # intent_num_loss = self.intent_num_criterion(pred_intent_num, golden_intent_num)
+            loss = pos_loss * self.args.l1 + neg_loss * self.args.l2
 
             loss.backward()
             self.bert_optimizer.step()
@@ -90,7 +91,7 @@ class TrainAIK(Train):
 
             if not self.args.use_mmc:
                 self.mu.grad.zero_()
-            
+
             all_pos_loss.append(pos_loss.item())
             all_neg_loss.append(neg_loss.item())
             self.step += 1
@@ -107,7 +108,7 @@ class TrainAIK(Train):
     def evaluate(self, loader):
         score, all_is_ood, intent_num_acc = mahalanobis(self.train_loader, loader, self.mdl)
         auroc, fpr95, aupr_out, aupr_in = get_auc(all_is_ood, score)
-        
+
         print(f'split index {self.args.split_index}, intent_num_acc: {intent_num_acc}, auroc: {auroc}, fpr95: {fpr95}, aupr out: {aupr_out}, aupr in: {aupr_in}')
 
         if loader == self.valid_loader:
@@ -119,7 +120,7 @@ class TrainAIK(Train):
             self.save_result(auroc, fpr95, aupr_out, aupr_in, intent_num_acc)
 
         return auroc
-    
+
 if __name__ == '__main__':
     exp = TrainAIK('configs/aik.yaml')
     exp.train()
