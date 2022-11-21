@@ -117,30 +117,30 @@ def ith_logit(all_logit, all_intent_num_pred):
 
 
 def mahalanobis(train_loader, test_loader, mdl, use_intent_num=True):
-    # train_rep = defaultdict(list)
-    # for x, y, _ in train_loader:
-    #     rep, _ = mdl(x)
-    #     for index, one_ys in enumerate(y):
-    #         for one_y in one_ys:
-    #             train_rep[one_y].append(rep[index][one_y].unsqueeze(0))
-    #
-    # mu_intent = {}
-    # sigma = torch.zeros((rep.shape[2], rep.shape[2])).to(rep.device)
-    # train_num = 0
-    # for intent in train_rep.keys():
-    #     train_rep[intent] = torch.cat(train_rep[intent], dim=0)
-    #     mu_intent[intent] = torch.mean(train_rep[intent], dim=0, dtype=torch.double)
-    #     diff = train_rep[intent] - mu_intent[intent]
-    #     index = 0  # avoid out of memory
-    #     while index < diff.shape[0]:
-    #         tmp_diff = torch.unsqueeze(diff[index: index + 200], axis=2)
-    #         tmp_diff_T = torch.transpose(tmp_diff, 2, 1)
-    #         sigma += torch.sum(tmp_diff * tmp_diff_T, axis=0)
-    #         train_num += tmp_diff.shape[0]
-    #         index += 200
-    #
-    # sigma = sigma / train_num
-    # sigma_I = torch.tensor(np.linalg.inv(sigma.cpu().numpy()), dtype=torch.double).to(sigma.device)
+    train_rep = defaultdict(list)
+    for x, y, _ in train_loader:
+        rep, _ = mdl(x)
+        for index, one_ys in enumerate(y):
+            for one_y in one_ys:
+                train_rep[one_y].append(rep[index][one_y].unsqueeze(0))
+
+    mu_intent = {}
+    sigma = torch.zeros((rep.shape[2], rep.shape[2])).to(rep.device)
+    train_num = 0
+    for intent in train_rep.keys():
+        train_rep[intent] = torch.cat(train_rep[intent], dim=0)
+        mu_intent[intent] = torch.mean(train_rep[intent], dim=0, dtype=torch.double)
+        diff = train_rep[intent] - mu_intent[intent]
+        index = 0  # avoid out of memory
+        while index < diff.shape[0]:
+            tmp_diff = torch.unsqueeze(diff[index: index + 200], axis=2)
+            tmp_diff_T = torch.transpose(tmp_diff, 2, 1)
+            sigma += torch.sum(tmp_diff * tmp_diff_T, axis=0)
+            train_num += tmp_diff.shape[0]
+            index += 200
+
+    sigma = sigma / train_num
+    sigma_I = torch.tensor(np.linalg.inv(sigma.cpu().numpy()), dtype=torch.double).to(sigma.device)
 
     test_rep = []
     all_intent_num_pred = []
