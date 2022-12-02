@@ -32,7 +32,7 @@ class TrainCL(Train):
 
         queue_size = self.args.queue_size
 
-        features_queue = torch.rand(0, 768)
+        features_queue = torch.rand(0, 768, device=self.args.device)
         labels_queue = []
 
         with torch.no_grad():

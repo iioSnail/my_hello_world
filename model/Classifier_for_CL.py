@@ -61,6 +61,8 @@ class Classifier(nn.Module):
         self.sim_method = self.args.sim_method
         self.sim_loss = nn.CrossEntropyLoss()
 
+        self.cl_loss_fct = nn.CrossEntropyLoss()
+
     def forward(self, sens):
         pooled_output, last_hidden_output, _ = self.encoder(sens)
         logit = self.mlp(pooled_output)
@@ -93,7 +95,7 @@ class Classifier(nn.Module):
         # 计算对比学习的loss
         return self.sim_loss(similarities, y_true)
 
-    def knn_contrastive_learning(self, cls_hidden_output, y, positive_sample):
+    def knn_contrastive_learning(self, cls_hidden_output, labels, positive_sample):
 
         with torch.no_grad():
             self.update_encoder_k()
@@ -103,7 +105,19 @@ class Classifier(nn.Module):
             update_keys = l2norm(update_keys)
             self._dequeue_and_enqueue(update_keys, positive_sample['labels'])
 
+        liner_q = self.projector(cls_hidden_output)
+        liner_q = l2norm(liner_q)
 
+        logits_con = self.select_pos_neg_sample(liner_q, labels)
+
+        if logits_con is not None:
+            labels_con = torch.zeros(logits_con.shape[0], dtype=torch.long, device=self.args.device) # 构造labels，与moco相同，正样本都是在0位置
+            loss_con = self.cl_loss_fct(logits_con, labels_con)
+            return loss_con
+        else:
+            return 0.
+
+        print()
         batch_size = len(sens)
 
         _, last_hidden_output, _ = self.encoder(sens)
@@ -134,32 +148,17 @@ class Classifier(nn.Module):
             param_k.data = param_k.data * m + param_q.data * (1. - m)
 
     def _dequeue_and_enqueue(self, keys, label):
-        # keys = concat_all_gather(keys)
-        # label = concat_all_gather(label)
         batch_size = keys.shape[0]
 
-        ptr = int(self.queue_ptr)   # 到这了
-
-        if ptr + batch_size > self.K:
-            batch_size = self.K - ptr
-            keys = keys[: batch_size]
-            label = label[: batch_size]
-
-        # replace the keys at ptr (dequeue ans enqueue)
-        self.feature_queue[ptr: ptr + batch_size, :] = keys
-        self.label_queue[ptr: ptr + batch_size] = label
-
-        ptr = (ptr + batch_size) % self.K
-
-        self.queue_ptr[0] = ptr
+        self.labels_queue = label + self.labels_queue[batch_size:]
+        self.features_queue = torch.cat([keys, self.features_queue[batch_size:]])
 
     def select_pos_neg_sample(self, liner_q: torch.Tensor, label_q: torch.Tensor):
-        label_queue = self.label_queue.clone().detach()  # K。 队列中样本的label
-        feature_queue = self.feature_queue.clone().detach()  # K * hidden_size。队列中样本的特征向量
+        label_queue = self.labels_queue  # K。 队列中样本的label
+        feature_queue = self.features_queue.clone().detach()  # K * hidden_size。队列中样本的特征向量
 
         # 1. expand label_queue and feature_queue to batch_size * K
-        batch_size = label_q.shape[0]
-        tmp_label_queue = label_queue.repeat([batch_size, 1])
+        batch_size = len(label_q)
         tmp_feature_queue = feature_queue.unsqueeze(0)
         tmp_feature_queue = tmp_feature_queue.repeat([batch_size, 1, 1])  # batch_size * K * hidden_size
 
@@ -167,10 +166,13 @@ class Classifier(nn.Module):
         cos_sim = torch.einsum('nc,nkc->nk', [liner_q, tmp_feature_queue])
 
         # 3. get index of postive and neigative
-        tmp_label = label_q.unsqueeze(1)
-        tmp_label = tmp_label.repeat([1, self.K])
-
-        pos_mask_index = torch.eq(tmp_label_queue, tmp_label)  # 找出队列中哪些是正样本
+        pos_mask_index = []
+        for batch_label in label_q:
+            item_mask_index = []
+            for queue_label in label_queue:
+                item_mask_index.append(batch_label == queue_label)
+            pos_mask_index.append(item_mask_index)
+        pos_mask_index = torch.tensor(pos_mask_index).to(self.args.device)  # 找出队列中哪些是正样本
         neg_mask_index = ~ pos_mask_index  # 找出队列中的负样本
 
         # 4.another option
@@ -196,7 +198,7 @@ class Classifier(nn.Module):
             return None
         pos_sample, _ = cos_sim.topk(pos_min, dim=-1)  # 以正样本最少的为准，找出前n个正样本。加这句的目的是防止有些正样本可能不足topk个(25个)
         # pos_sample, _ = pos_sample.topk(pos_min, dim=-1)
-        pos_sample_top_k = pos_sample[:, 0:self.top_k]  # self.topk = 25 # 找出每个样本的前25个正样本（相似度最高的前25个）
+        pos_sample_top_k = pos_sample[:, 0:self.args.cl_k]  # self.topk = 25 # 找出每个样本的前25个正样本（相似度最高的前25个）
         # pos_sample_top_k = pos_sample[:, 0:self.top_k]
         # pos_sample_last = pos_sample[:, -1]
         ##pos_sample_last = pos_sample_last.view([-1, 1])
@@ -210,9 +212,9 @@ class Classifier(nn.Module):
         if neg_min == 0:
             return None
         neg_sample, _ = neg_sample.topk(neg_min, dim=-1)
-        neg_topk = min(pos_min, self.top_k)
+        neg_topk = min(pos_min, self.args.cl_k)
         neg_sample = neg_sample.repeat([1, neg_topk])
         neg_sample = neg_sample.view([-1, neg_min])
         logits_con = torch.cat([pos_sample, neg_sample], dim=-1)
-        logits_con /= self.T  # 除以温度参数
+        logits_con /= self.args.T  # 除以温度参数
         return logits_con
