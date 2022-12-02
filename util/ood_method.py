@@ -83,6 +83,7 @@ def nnd(train_loader, test_loader, mdl, ood_method='nn_euler', k=1):
         # 上面那种写法太吃内存了，改为for循环
         for rep in tqdm(test_rep, desc="nn_euler"):
             distances = F.pairwise_distance(rep, train_rep.unsqueeze(0))
+            #distances = F.pairwise_distance(rep, train_rep)
             nearest_distances.append(torch.topk(distances, k, largest=False)[0][-1].cpu())
 
     if ood_method == 'nn_cosine':
