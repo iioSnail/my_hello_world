@@ -19,7 +19,7 @@ def collate_fn(batch):
 def create_loader(batch_size, file_name, label_category, shuffle):
     dataset = ClassifierDataset(file_name, label_category)
     loader = torch.utils.data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, drop_last=False, collate_fn=collate_fn)
-    return loader
+    return loader, dataset
 
 def load_args(config, base_config='configs/base.yaml'):
     with open(base_config) as f:

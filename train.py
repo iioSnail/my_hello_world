@@ -44,9 +44,9 @@ class Train(ABC):
 
         # fitlog.add_hyper(self.args)
 
-        self.train_loader = create_loader(self.args.batch_size, self.args.train, label_category, True)
-        self.valid_loader = create_loader(self.args.batch_size, self.args.valid, label_category, False)
-        self.test_loader = create_loader(self.args.batch_size, self.args.test, label_category, False)
+        self.train_loader, self.train_set = create_loader(self.args.batch_size, self.args.train, label_category, True)
+        self.valid_loader, _ = create_loader(self.args.batch_size, self.args.valid, label_category, False)
+        self.test_loader, _ = create_loader(self.args.batch_size, self.args.test, label_category, False)
 
         if self.args.method == 'lof':
             from model.Classifier_for_LOF import Classifier

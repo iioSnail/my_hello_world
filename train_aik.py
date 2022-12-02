@@ -122,6 +122,6 @@ class TrainAIK(Train):
     
 if __name__ == '__main__':
     exp = TrainAIK('configs/aik.yaml')
-    exp.train()
+    # exp.train()
     exp.test()
     # fitlog.finish()

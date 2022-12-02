@@ -1,3 +1,5 @@
+import random
+
 from tqdm import tqdm
 
 from train import Train
@@ -20,6 +22,37 @@ class TrainCL(Train):
         other_params = list(set(self.mdl.parameters()) - set(self.mdl.encoder.parameters()))
         self.other_optimizer = optim.Adam(other_params, lr=self.args.lr)
 
+        self.init_cl_queue()
+
+        self.negative_data = self.create_negative_dataset()
+
+    def init_cl_queue(self):
+        if self.args.l2 <= 0:
+            return
+
+        queue_size = self.args.queue_size
+
+        features_queue = torch.rand(0, 768)
+        labels_queue = []
+
+        with torch.no_grad():
+            print("Start initiate contrastive learning queue...")
+            for x, y, _ in self.train_loader:
+                _, _, cls_hidden_output = self.mdl(x)
+                features_queue = torch.cat([features_queue, cls_hidden_output])
+                labels_queue.extend(y)
+
+                if len(labels_queue) >= queue_size:
+                    break
+
+            print("Complete initiate contrastive learning queue...")
+
+        features_queue = features_queue[: queue_size]
+        labels_queue = labels_queue[: queue_size]
+
+        self.mdl.features_queue = features_queue
+        self.mdl.labels_queue = labels_queue
+
     def train_epoch(self):
         self.current_epoch += 1
 
@@ -39,12 +72,14 @@ class TrainCL(Train):
             logit: Shape为(batch_size, intent_num)。例如(4,3)表示batch_size为4，有3个已知意图。
                    然后进行对每个值进行sigmoid，若存在某个大于0.5，则认为其是OOD数据。
             """
-            logit, _,  cls_hidden_output = self.mdl(x)  # for LOF, pred_intent_num is None
+            logit, _, cls_hidden_output = self.mdl(x)  # for LOF, pred_intent_num is None
 
             cl_loss = 0.
             # 如果是训练模式，并且对比学习的权重大于0, 则进行对比学习
             if self.args.l2 > 0:
-                cl_loss = self.mdl.contrastive_learning(x, cls_hidden_output)
+                # cl_loss = self.mdl.contrastive_learning(x, cls_hidden_output, y)
+                positive_sample = self.generate_positive_sample(y)
+                cl_loss = self.mdl.knn_contrastive_learning(cls_hidden_output, y, positive_sample)
 
             bce_loss = self.bce_criterion(logit, y_one_hot)  # BCEWithLogitsLoss包含sigmoid计算
 
@@ -113,6 +148,36 @@ class TrainCL(Train):
             self.save_result(auroc, fpr95, aupr_out, aupr_in)
 
         return auroc
+
+    def generate_positive_sample(self, labels):
+        positive_num = 3
+        positive_sens = []
+        positive_labels = []
+        for label in labels:
+            label_key = ','.join([str(x) for x in label])
+            samples = random.sample(self.negative_data[label_key], positive_num)
+            for i in range(len(samples)):
+                positive_labels.append(label)
+
+            positive_sens.extend(samples)
+        return {
+            "sentences": positive_sens,
+            "labels": positive_labels
+        }
+
+    def create_negative_dataset(self):
+        negative_dataset = {}
+        data = self.train_set
+
+        for line in data:
+            label = ','.join([str(x) for x in line[1]])
+            inputs = line[0]
+            if label not in negative_dataset.keys():
+                negative_dataset[label] = [inputs]
+            else:
+                negative_dataset[label].append(inputs)
+
+        return negative_dataset
 
 
 if __name__ == '__main__':
