@@ -96,7 +96,6 @@ class Classifier(nn.Module):
         return self.sim_loss(similarities, y_true)
 
     def knn_contrastive_learning(self, cls_hidden_output, labels, positive_sample):
-
         with torch.no_grad():
             self.update_encoder_k()
 
@@ -116,29 +115,6 @@ class Classifier(nn.Module):
             return loss_con
         else:
             return 0.
-
-        print()
-        batch_size = len(sens)
-
-        _, last_hidden_output, _ = self.encoder(sens)
-        cls_hidden_output_2 = last_hidden_output[:, 0, :]
-
-        cls_hidden_output = torch.cat([cls_hidden_output, cls_hidden_output_2], dim=0)
-
-        # 将所有的样本再经过一次dense层
-        outputs = self.projector(cls_hidden_output)
-
-        # 计算每个样本与其他所有样本的相似度
-        similarities = self.sim(outputs.unsqueeze(1), outputs.unsqueeze(0))
-
-        # 因为第二次过bert直接拼到第一次的后面的，所以y_true为[128, 129, ...., 0, 1, 2, ...]
-        y_true = torch.cat([torch.arange(batch_size, batch_size * 2),
-                            torch.arange(0, batch_size)], dim=0).long().to(self.args.device)
-
-        similarities = similarities - (torch.eye(similarities.shape[0]) * 1e12).to(self.args.device)
-
-        # 计算对比学习的loss
-        return self.sim_loss(similarities, y_true)
 
     def update_encoder_k(self):
         m = self.args.m
@@ -170,7 +146,7 @@ class Classifier(nn.Module):
         for batch_label in label_q:
             item_mask_index = []
             for queue_label in label_queue:
-                item_mask_index.append(batch_label == queue_label)
+                item_mask_index.append(len(list(set(batch_label) & set(queue_label))) > 0)
             pos_mask_index.append(item_mask_index)
         pos_mask_index = torch.tensor(pos_mask_index).to(self.args.device)  # 找出队列中哪些是正样本
         neg_mask_index = ~ pos_mask_index  # 找出队列中的负样本

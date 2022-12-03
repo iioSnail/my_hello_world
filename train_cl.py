@@ -47,6 +47,10 @@ class TrainCL(Train):
 
             print("Complete initiate contrastive learning queue...")
 
+        shuffle_idx = torch.randperm(features_queue.size(0))
+        features_queue = features_queue[shuffle_idx]
+        labels_queue = [labels_queue[idx] for idx in shuffle_idx]
+
         features_queue = features_queue[: queue_size]
         labels_queue = labels_queue[: queue_size]
 
@@ -154,8 +158,11 @@ class TrainCL(Train):
         positive_sens = []
         positive_labels = []
         for label in labels:
-            label_key = ','.join([str(x) for x in label])
-            samples = random.sample(self.negative_data[label_key], positive_num)
+            candidates_samples = []
+            for key in label:
+                candidates_samples.extend(self.negative_data[key])
+            samples = random.sample(candidates_samples,
+                                    positive_num if len(candidates_samples) > positive_num else len(candidates_samples))
             for i in range(len(samples)):
                 positive_labels.append(label)
 
@@ -170,12 +177,12 @@ class TrainCL(Train):
         data = self.train_set
 
         for line in data:
-            label = ','.join([str(x) for x in line[1]])
-            inputs = line[0]
-            if label not in negative_dataset.keys():
-                negative_dataset[label] = [inputs]
-            else:
-                negative_dataset[label].append(inputs)
+            for x in line[1]:
+                inputs = line[0]
+                if x not in negative_dataset.keys():
+                    negative_dataset[x] = [inputs]
+                else:
+                    negative_dataset[x].append(inputs)
 
         return negative_dataset
 
