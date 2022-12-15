@@ -63,10 +63,17 @@ class Classifier(nn.Module):
 
         self.cl_loss_fct = nn.CrossEntropyLoss()
 
+        if self.args.cl_method == 'label_representation':
+            """
+            输入特征数为bert的hidden_size
+            输出特征数为已知意图数量（in-distribution intent num）
+            """
+            self.query_weight = nn.Linear(self.args.hidden_size, self.args.ind_intent_num, bias=False)
+
     def forward(self, sens):
-        pooled_output, last_hidden_output, _ = self.encoder(sens)
+        pooled_output, last_hidden_output, mask = self.encoder(sens)
         logit = self.mlp(pooled_output)
-        return logit, None, last_hidden_output[:, 0, :]
+        return logit, last_hidden_output, last_hidden_output[:, 0, :], mask
 
     def test(self, sens):
         pooled_output, _, _ = self.encoder(sens)
@@ -115,6 +122,30 @@ class Classifier(nn.Module):
             return loss_con
         else:
             return 0.
+
+    @staticmethod
+    def masked_softmax(x, m=None, axis=-1):
+        if len(m.size()) == 2:
+            m = m.unsqueeze(1)
+        if m is not None:
+            m = m.float()
+            x = x * m
+        e_x = torch.exp(x - torch.max(x, dim=axis, keepdim=True)[0])
+        if m is not None:
+            e_x = e_x * m
+        softmax = e_x / (torch.sum(e_x, dim=axis, keepdim=True) + 1e-6)
+        return softmax
+
+    def label_representation_contrastive_learning(self, token_hidden_outputs, mask, labels):
+        weight = self.query_weight(token_hidden_outputs)
+        weight = torch.transpose(weight, 1, 2)
+        weight = self.masked_softmax(weight, mask)
+        rep = torch.bmm(weight, token_hidden_outputs)
+
+
+
+        # 计算对比学习的loss
+        return 0.
 
     def update_encoder_k(self):
         m = self.args.m
