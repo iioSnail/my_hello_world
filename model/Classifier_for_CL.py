@@ -79,7 +79,7 @@ class Classifier(nn.Module):
         pooled_output, _, _ = self.encoder(sens)
         return pooled_output
 
-    def contrastive_learning(self, sens, cls_hidden_output, labels):
+    def contrastive_learning(self, sens, cls_hidden_output):
         batch_size = len(sens)
 
         _, last_hidden_output, _ = self.encoder(sens)
@@ -136,13 +136,32 @@ class Classifier(nn.Module):
         softmax = e_x / (torch.sum(e_x, dim=axis, keepdim=True) + 1e-6)
         return softmax
 
+    def multi_label_contrastive_loss(self, similarities, labels):
+        print()
+
     def label_representation_contrastive_learning(self, token_hidden_outputs, mask, labels):
+        batch_size = token_hidden_outputs.size(0)
         weight = self.query_weight(token_hidden_outputs)
         weight = torch.transpose(weight, 1, 2)
         weight = self.masked_softmax(weight, mask)
         rep = torch.bmm(weight, token_hidden_outputs)
+        rep = l2norm(rep)
+        # similarities shape is (batch_size, batch_size, intent_num),
+        # 其中 s[i][j][k]表示第i个样本和第j个样本，他们的第k个意图表示的相似度。
+        similarities = torch.einsum("nij,mij->nmi", rep, rep)
 
-
+        # build targets
+        targets = torch.zeros(similarities.size()).to(self.args.device)
+        """
+        构造label，例如，对于标签
+        [[0, 1, 2],
+         [1, 2, 3],
+         [1, 3, 4],
+         [2, 4, 6]]
+        其targets[0][1][1,2]=1，意思是样本0和样本1的意图1和2的表示应该相似一点。其他同理
+        """
+        for i in range(len(labels)):
+            pass
 
         # 计算对比学习的loss
         return 0.

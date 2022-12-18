@@ -84,7 +84,7 @@ class TrainCL(Train):
                 positive_sample = self.generate_positive_sample(y)
                 cl_loss = self.mdl.knn_contrastive_learning(cls_hidden_output, y, positive_sample)
             elif self.args.cl_method == 'SimCLR':
-                cl_loss = self.mdl.contrastive_learning(x, cls_hidden_output, y)
+                cl_loss = self.mdl.contrastive_learning(x, cls_hidden_output)
             elif self.args.cl_method == 'label_representation':
                 cl_loss = self.mdl.label_representation_contrastive_learning(token_hidden_outputs, mask, y)
             else:
