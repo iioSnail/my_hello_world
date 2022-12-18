@@ -126,8 +126,8 @@ class Classifier(nn.Module):
     def _dequeue_and_enqueue(self, keys, label):
         batch_size = keys.shape[0]
 
-        self.labels_queue = label + self.labels_queue[batch_size:]
-        self.features_queue = torch.cat([keys, self.features_queue[batch_size:]])
+        self.labels_queue = self.labels_queue[batch_size:] + label
+        self.features_queue = torch.cat([self.features_queue[batch_size:], keys])
 
     def select_pos_neg_sample(self, liner_q: torch.Tensor, label_q: torch.Tensor):
         label_queue = self.labels_queue  # K。 队列中样本的label
