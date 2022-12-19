@@ -10,3 +10,4 @@ queue_size: 6500
 m: 0.999  # momentum
 cl_k: 25
 T: 0.05
+cl_method: label_representation

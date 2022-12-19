@@ -22,9 +22,9 @@ class TrainCL(Train):
         other_params = list(set(self.mdl.parameters()) - set(self.mdl.encoder.parameters()))
         self.other_optimizer = optim.Adam(other_params, lr=self.args.lr)
 
-        self.init_cl_queue()
-
-        self.negative_data = self.create_negative_dataset()
+        if self.args.cl_method == 'knn':
+            self.init_cl_queue()
+            self.negative_data = self.create_negative_dataset()
 
     def init_cl_queue(self):
         if self.args.l2 <= 0:
@@ -76,14 +76,19 @@ class TrainCL(Train):
             logit: Shape为(batch_size, intent_num)。例如(4,3)表示batch_size为4，有3个已知意图。
                    然后进行对每个值进行sigmoid，若存在某个大于0.5，则认为其是OOD数据。
             """
-            logit, _, cls_hidden_output = self.mdl(x)  # for LOF, pred_intent_num is None
+            logit, token_hidden_outputs, cls_hidden_output, mask = self.mdl(x)  # for LOF, pred_intent_num is None
 
             cl_loss = 0.
             # 如果是训练模式，并且对比学习的权重大于0, 则进行对比学习
-            if self.args.l2 > 0:
-                # cl_loss = self.mdl.contrastive_learning(x, cls_hidden_output, y)
+            if self.args.cl_method == 'knn':
                 positive_sample = self.generate_positive_sample(y)
                 cl_loss = self.mdl.knn_contrastive_learning(cls_hidden_output, y, positive_sample)
+            elif self.args.cl_method == 'SimCLR':
+                cl_loss = self.mdl.contrastive_learning(x, cls_hidden_output)
+            elif self.args.cl_method == 'label_representation':
+                cl_loss = self.mdl.label_representation_contrastive_learning(token_hidden_outputs, mask, y)
+            else:
+                print("[WARNING] Cannot find any contrastive learning method!")
 
             bce_loss = self.bce_criterion(logit, y_one_hot)  # BCEWithLogitsLoss包含sigmoid计算
 
