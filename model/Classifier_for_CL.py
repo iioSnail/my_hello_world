@@ -164,7 +164,7 @@ class Classifier(nn.Module):
                     targets[i][j][intent] = 1
                     targets[j][i][intent] = 1
 
-        sim_mask = torch.eye(batch_size).unsqueeze(2).broadcast_to(similarities.size()) * 1e12
+        sim_mask = torch.eye(batch_size).unsqueeze(2).broadcast_to(similarities.size()).to(self.args.device) * 1e12
         similarities = similarities - sim_mask
         inputs = F.softmax(similarities, dim=1)
         loss_weight = targets.sum(1)
