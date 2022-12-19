@@ -137,6 +137,7 @@ class Classifier(nn.Module):
         return softmax
 
     def label_representation_contrastive_learning(self, token_hidden_outputs, mask, labels):
+        batch_size = token_hidden_outputs.size(0)
         weight = self.query_weight(token_hidden_outputs)
         weight = torch.transpose(weight, 1, 2)
         weight = self.masked_softmax(weight, mask)
@@ -163,7 +164,14 @@ class Classifier(nn.Module):
                     targets[i][j][intent] = 1
                     targets[j][i][intent] = 1
 
-        return F.binary_cross_entropy_with_logits(similarities, targets)
+        sim_mask = torch.eye(batch_size).unsqueeze(2).broadcast_to(similarities.size()) * 1e12
+        similarities = similarities - sim_mask
+        inputs = F.softmax(similarities, dim=1)
+        loss_weight = targets.sum(1)
+        loss_weight[loss_weight == 0] = 1e12  # 如果没有任何正样本，则不计算loss
+        loss_weight = 1 / loss_weight
+
+        return F.binary_cross_entropy(inputs, targets, weight=loss_weight)
 
     def update_encoder_k(self):
         m = self.args.m
