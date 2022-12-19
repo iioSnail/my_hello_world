@@ -136,11 +136,7 @@ class Classifier(nn.Module):
         softmax = e_x / (torch.sum(e_x, dim=axis, keepdim=True) + 1e-6)
         return softmax
 
-    def multi_label_contrastive_loss(self, similarities, labels):
-        print()
-
     def label_representation_contrastive_learning(self, token_hidden_outputs, mask, labels):
-        batch_size = token_hidden_outputs.size(0)
         weight = self.query_weight(token_hidden_outputs)
         weight = torch.transpose(weight, 1, 2)
         weight = self.masked_softmax(weight, mask)
@@ -161,10 +157,13 @@ class Classifier(nn.Module):
         其targets[0][1][1,2]=1，意思是样本0和样本1的意图1和2的表示应该相似一点。其他同理
         """
         for i in range(len(labels)):
-            pass
+            for j in range(i+1, len(labels)):
+                inter_labels = set(labels[i]).intersection(labels[j])
+                for intent in inter_labels:
+                    targets[i][j][intent] = 1
+                    targets[j][i][intent] = 1
 
-        # 计算对比学习的loss
-        return 0.
+        return F.binary_cross_entropy_with_logits(similarities, targets)
 
     def update_encoder_k(self):
         m = self.args.m
