@@ -1,4 +1,5 @@
 import copy
+import random
 
 import numpy as np
 import torch
@@ -6,6 +7,8 @@ import torch.nn as nn
 
 from model.BERT import BERT
 from torch.nn import functional as F
+
+from util.training_util import save_intent_representation
 
 """
 Contrastive Learning
@@ -195,6 +198,9 @@ class Classifier(nn.Module):
         cl_loss = F.binary_cross_entropy(inputs, targets, weight=loss_weight)
 
         pos_loss = self.pos_loss_fct(rep, labels)
+
+        if random.randint(0, 20) == 0:
+            save_intent_representation(rep.detach().cpu())
 
         return 0.5 * cl_loss + 0.5 * pos_loss
 

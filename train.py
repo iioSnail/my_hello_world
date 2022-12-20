@@ -85,7 +85,7 @@ class Train(ABC):
         if result < self.args.save_threshold:
             print('Exit without saving model parameter.')
         else:
-            dir_name = f'{self.args.param_dir}/{self.args.dataset}/{self.args.loss}_{result}'
+            dir_name = f'{self.args.param_dir}/{self.args.dataset}/{self.args.method}'
             is_exists = os.path.exists(dir_name)
             if is_exists:
                 print(f'{dir_name} has existed')
@@ -96,6 +96,8 @@ class Train(ABC):
             with open(f'{dir_name}/hyper_parameter.txt', 'w') as f:
                 for key, value in args_dict.items():
                     f.write(f'{key}: {value} \n')
+
+            print("Save model to", f'{dir_name}/params.pkl')
 
     def train(self):
         max_auroc = 0
@@ -134,6 +136,7 @@ class Train(ABC):
 
     def save_result(self, auroc, fpr95, aupr_out, aupr_in, intent_num_acc="", output_path='output/result.csv'):
         result_frame = pd.read_csv(output_path)
+        result_frame.to_csv(output_path, index=False)
         result_frame.loc[len(result_frame.index)] = [time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
                                                      self.args.dataset,
                                                      self.args.method,
@@ -147,4 +150,3 @@ class Train(ABC):
                                                      ','.join(self.valid_ood_set),
                                                      ','.join(self.test_ood_set)
                                                      ]
-        result_frame.to_csv(output_path, index=False)

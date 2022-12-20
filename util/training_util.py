@@ -1,3 +1,7 @@
+import os
+from datetime import datetime
+from pathlib import Path
+
 from util.ClassifierDataset import ClassifierDataset
 import torch
 import yaml
@@ -5,6 +9,12 @@ import argparse
 import numpy as np
 import random
 from collections import defaultdict
+
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+
+FILE = Path(__file__).resolve()
+ROOT = FILE.parents[1]
 
 def collate_fn(batch):
     utts = []
@@ -16,15 +26,18 @@ def collate_fn(batch):
         is_oods.append(instance[2])
     return utts, labels, is_oods
 
+
 def create_loader(batch_size, file_name, label_category, shuffle):
     dataset = ClassifierDataset(file_name, label_category)
-    loader = torch.utils.data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, drop_last=False, collate_fn=collate_fn)
+    loader = torch.utils.data.DataLoader(dataset=dataset, batch_size=batch_size, shuffle=shuffle, drop_last=False,
+                                         collate_fn=collate_fn)
     return loader, dataset
+
 
 def load_args(config, base_config='configs/base.yaml'):
     with open(base_config) as f:
         base = yaml.load(f, Loader=yaml.FullLoader)
-    
+
     with open(config) as f:
         cfg = yaml.load(f, Loader=yaml.FullLoader)
 
@@ -54,12 +67,14 @@ def load_args(config, base_config='configs/base.yaml'):
 
     return args
 
+
 def set_seed(seed):
     torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
+
 
 def init_mmc_center(args, ind_set):
     def get_mmc(intent_num, feature_num, C):
@@ -71,7 +86,7 @@ def init_mmc_center(args, ind_set):
             mean[k][k] = torch.sqrt(torch.abs(1 - torch.norm(mean[k]) ** 2))
         mean = mean * C
         return mean
-        
+
     domain_count = defaultdict(int)
     for intent in ind_set:
         domain_count[intent.split('-')[1]] += 1
@@ -89,3 +104,23 @@ def init_mmc_center(args, ind_set):
 
     mean = mean.to(args.device)
     return mean
+
+
+def save_intent_representation(tensors, path='output/visual'):
+    batch_size = tensors.size(0)
+    intent_num = tensors.size(1)
+    tensors = tensors.numpy().reshape(batch_size * intent_num, -1)
+    pca = PCA(n_components=2)
+    xy = pca.fit_transform(tensors)
+    tensors_xy = xy.reshape(batch_size, intent_num, -1)
+    fig, ax = plt.subplots(1, 1)
+    for i in range(tensors_xy.shape[1]):
+        xy = tensors_xy[:, i, :]
+        ax.scatter(xy[:, 0], xy[:, 1])
+
+    filepath = ROOT / path
+    if not os.path.exists(filepath):
+        os.makedirs(filepath)
+
+    filepath = filepath / ("visual-%s.png" % datetime.now().strftime("%H%M%S"))
+    fig.savefig(filepath)
