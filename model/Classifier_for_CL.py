@@ -69,6 +69,8 @@ class Classifier(nn.Module):
             输出特征数为已知意图数量（in-distribution intent num）
             """
             self.query_weight = nn.Linear(self.args.hidden_size, self.args.ind_intent_num, bias=False)
+            self.intent_centers = torch.rand(self.args.ind_intent_num, self.args.hidden_size).to(self.args.device)
+            self.intent_centers.requires_grad = True
 
     def forward(self, sens):
         pooled_output, last_hidden_output, mask = self.encoder(sens)
@@ -136,6 +138,25 @@ class Classifier(nn.Module):
         softmax = e_x / (torch.sum(e_x, dim=axis, keepdim=True) + 1e-6)
         return softmax
 
+    def pos_loss_fct(self, output, y):
+        """
+        :param output: 网络输出的每个语料对于每种意图的向量表示
+        :param y: 每个语料实际的意图。
+                  例如[[1], [0,1]]，表示2个语料。第一个语料包含1个意图，意图为1
+                  第二个语料包含两个意图，意图分别为0,1
+        """
+        golden_center = torch.tensor([]).to(self.args.device)
+        golden_output = torch.tensor([]).to(self.args.device)
+        for index, one_y in enumerate(y):
+            # 获取y中的每个意图的意图中心点
+            golden_center = torch.cat((golden_center, self.intent_centers[one_y]), dim=0)
+            # 获取网络输出对应真实意图的向量表示
+            golden_output = torch.cat((golden_output, output[index][one_y]), dim=0)
+        # batch_size: 并非dataloader的batch_size，而是这批语料中包含的意图总数
+        bsz = len(golden_center)
+        # 让网络输出的意图向量表示尽可能的接近真实意图中心
+        return torch.pow(golden_output - golden_center, 2).sum() / (2 * bsz)
+
     def label_representation_contrastive_learning(self, token_hidden_outputs, mask, labels):
         batch_size = token_hidden_outputs.size(0)
         weight = self.query_weight(token_hidden_outputs)
@@ -171,7 +192,11 @@ class Classifier(nn.Module):
         loss_weight[loss_weight == 0] = 1e12  # 如果没有任何正样本，则不计算loss
         loss_weight = 1 / loss_weight
 
-        return F.binary_cross_entropy(inputs, targets, weight=loss_weight)
+        cl_loss = F.binary_cross_entropy(inputs, targets, weight=loss_weight)
+
+        pos_loss = self.pos_loss_fct(rep, labels)
+
+        return 0.5 * cl_loss + 0.5 * pos_loss
 
     def update_encoder_k(self):
         m = self.args.m
