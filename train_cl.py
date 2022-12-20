@@ -87,7 +87,9 @@ class TrainCL(Train):
             elif self.args.cl_method == 'SimCLR':
                 cl_loss = self.mdl.contrastive_learning(x, cls_hidden_output)
             elif self.args.cl_method == 'label_representation':
-                cl_loss = self.mdl.label_representation_contrastive_learning(token_hidden_outputs, mask, y)
+                cl_loss = self.mdl.contrastive_learning(x, cls_hidden_output)
+                cl_loss_plus = self.mdl.label_representation_contrastive_learning(token_hidden_outputs, mask, y)
+                cl_loss = cl_loss + 0.1 * cl_loss_plus
             else:
                 print("[WARNING] Cannot find any contrastive learning method!")
 
