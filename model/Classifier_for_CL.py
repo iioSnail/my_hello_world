@@ -188,13 +188,15 @@ class Classifier(nn.Module):
                     targets[i][j][intent] = 1
                     targets[j][i][intent] = 1
 
-        sim_mask = torch.eye(batch_size).unsqueeze(2).broadcast_to(similarities.size()).to(self.args.device) * 1e12
+        sim_mask = torch.eye(batch_size).unsqueeze(2).expand_as(similarities).to(self.args.device) * 1e12
         similarities = similarities - sim_mask
         inputs = F.softmax(similarities, dim=1)
         loss_weight = targets.sum(1)
         loss_weight[loss_weight == 0] = 1e12  # 如果没有任何正样本，则不计算loss
         loss_weight = 1 / loss_weight
-
+        loss_weight = loss_weight.unsqueeze(1).expand_as(targets)
+        loss_weight = torch.where(targets==0,torch.zeros(1).cuda(),loss_weight)
+        
         cl_loss = F.binary_cross_entropy(inputs, targets, weight=loss_weight)
 
         pos_loss = self.pos_loss_fct(rep, labels)
