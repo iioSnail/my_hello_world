@@ -195,8 +195,7 @@ class Classifier(nn.Module):
         loss_weight[loss_weight == 0] = 1e12  # 如果没有任何正样本，则不计算loss
         loss_weight = 1 / loss_weight
 
-        # cl_loss = F.binary_cross_entropy(inputs, targets, weight=loss_weight)
-        cl_loss = 0. # FXIME 暂时去掉cl_loss试试
+        cl_loss = F.binary_cross_entropy(inputs, targets, weight=loss_weight)
 
         pos_loss = self.pos_loss_fct(rep, labels)
 
