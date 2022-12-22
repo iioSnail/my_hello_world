@@ -120,7 +120,7 @@ class Classifier(nn.Module):
         liner_q = l2norm(liner_q)
 
         if random.randint(0, 15) == 0:
-            save_intent_representation(cls_hidden_output)
+            save_intent_representation(cls_hidden_output.detach().unsqueeze(0))
 
         logits_con = self.select_pos_neg_sample(liner_q, labels)
 
