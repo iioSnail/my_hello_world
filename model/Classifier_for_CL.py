@@ -120,7 +120,7 @@ class Classifier(nn.Module):
         liner_q = l2norm(liner_q)
 
         if random.randint(0, 15) == 0:
-            save_intent_representation(cls_hidden_output.detach().unsqueeze(0))
+            save_intent_representation(cls_hidden_output.detach().unsqueeze(0).cpu())
 
         logits_con = self.select_pos_neg_sample(liner_q, labels)
 
@@ -129,7 +129,7 @@ class Classifier(nn.Module):
             loss_con = self.cl_loss_fct(logits_con, labels_con)
             return loss_con
         else:
-            return 0.
+            return torch.tensor(0.).to(self.args.device)
 
     @staticmethod
     def masked_softmax(x, m=None, axis=-1):

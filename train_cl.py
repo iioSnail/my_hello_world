@@ -79,7 +79,7 @@ class TrainCL(Train):
             """
             logit, token_hidden_outputs, cls_hidden_output, mask = self.mdl(x)  # for LOF, pred_intent_num is None
 
-            cl_loss = 0.
+            cl_loss = torch.tensor(0).to(self.args.device)
             # 如果是训练模式，并且对比学习的权重大于0, 则进行对比学习
             if self.args.cl_method == 'knn':
                 positive_sample = self.generate_positive_sample(y)
