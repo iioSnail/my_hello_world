@@ -119,6 +119,9 @@ class Classifier(nn.Module):
         liner_q = self.projector(cls_hidden_output)
         liner_q = l2norm(liner_q)
 
+        if random.randint(0, 15) == 0:
+            save_intent_representation(cls_hidden_output)
+
         logits_con = self.select_pos_neg_sample(liner_q, labels)
 
         if logits_con is not None:
