@@ -106,6 +106,7 @@ def init_mmc_center(args, ind_set):
     return mean
 
 
+plt.rcParams.update({'figure.max_open_warning': 0})
 def save_intent_representation(tensors, path='output/visual'):
     batch_size = tensors.size(0)
     intent_num = tensors.size(1)
