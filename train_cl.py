@@ -38,7 +38,7 @@ class TrainCL(Train):
         with torch.no_grad():
             print("Start initiate contrastive learning queue...")
             for x, y, _ in self.train_loader:
-                _, _, cls_hidden_output = self.mdl(x)
+                _, _, cls_hidden_output, _ = self.mdl(x)
                 cls_hidden_output = torch.nn.functional.normalize(cls_hidden_output)
                 features_queue = torch.cat([features_queue, cls_hidden_output])
                 labels_queue.extend(y)
