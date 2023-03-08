@@ -136,7 +136,7 @@ class Train(ABC):
 
     def save_result(self, auroc, fpr95, aupr_out, aupr_in, intent_num_acc="", output_path='output/result.csv'):
         result_frame = pd.read_csv(output_path)
-        result_frame.to_csv(output_path, index=False)
+        
         result_frame.loc[len(result_frame.index)] = [time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()),
                                                      self.args.dataset,
                                                      self.args.method,
@@ -150,3 +150,4 @@ class Train(ABC):
                                                      ','.join(self.valid_ood_set),
                                                      ','.join(self.test_ood_set)
                                                      ]
+        result_frame.to_csv(output_path, index=False)
